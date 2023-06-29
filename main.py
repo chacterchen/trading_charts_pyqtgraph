@@ -1,15 +1,14 @@
-from datetime import datetime
 import json
+from datetime import datetime
 
+import charts
 import numpy as np
 import pyqtgraph as pg
+import utility
 from binance.client import Client
 from PyQt5 import QtWidgets
 from PyQt5.QtGui import QIcon
 from pyqtgraph import QtCore, QtGui
-
-import charts
-import utility
 
 
 def interval_to_unix(interval):
@@ -34,11 +33,42 @@ def interval_to_unix(interval):
     return intervals[interval]
 
 
-with open('api.json') as f:
-    api = json.load(f)
-client = Client(api['api_key'], api['api_secret'])
+def mouse_moved(evt):
+    pos = evt[0]
+    if pI.sceneBoundingRect().contains(pos):
+        mouse_point = vb.mapSceneToView(pos)
 
-pair = "ETHUSDT"
+        utility.price_text.setText(str(charts.format_value(mouse_point.y(), tick_size)))
+        utility.price_text.setPos(win.width(), pos.y())
+
+        if mouse_point.x() >= mouse_point.x() - mouse_point.x() % (
+            interval_to_unix(interval) / 1000
+        ) + (interval_to_unix(interval) / 1000 / 2):
+            x = (
+                mouse_point.x()
+                - mouse_point.x() % (interval_to_unix(interval) / 1000)
+                + (interval_to_unix(interval) / 1000)
+            )
+
+        else:
+            x = mouse_point.x() - mouse_point.x() % (interval_to_unix(interval) / 1000)
+
+        utility.time_text.setText(
+            datetime.fromtimestamp(x).strftime("%Y-%m-%d %H:%M:%S")
+        )
+        utility.v_line.setPos(x)
+        utility.time_text.setPos(
+            vb.mapViewToScene(QtCore.QPointF(x, mouse_point.y())).x(), win.height()
+        )
+        utility.h_line.setPos(mouse_point.y())
+
+
+with open("api.json") as f:
+    api = json.load(f)
+
+client = Client(api["api_key"], api["api_secret"])
+
+pair = "BTCUSDT"
 fetch_time = "365 day ago UTC"
 interval = "1d"
 
@@ -51,11 +81,7 @@ lows = np.array(klines, dtype=float)[:, 3]
 closes = np.array(klines, dtype=float)[:, 4]
 volume = np.array(klines, dtype=float)[:, 5]
 
-step_size = float(client.get_symbol_info(pair)["filters"][0]["tickSize"])
-
-del klines
-
-# vama = VAMA(dates, highs, lows, 0.05, 100)
+tick_size = float(client.get_symbol_info(pair)["filters"][0]["tickSize"])
 
 app = QtWidgets.QApplication([])
 app.setWindowIcon(QIcon("icon.png"))
@@ -79,115 +105,37 @@ l.addItem(pI)
 pI.showAxis("right")
 pI.hideAxis("left")
 
-# p1.addItem(CandlestickHighLowItem(dates, highs, lows))
-
-# p1.addItem(CandlestickItem(dates, opens, highs, lows, closes))
-
-# p1.addItem(BarItem(dates, opens, highs, lows, closes))
-
-p1.addItem(charts.BionicItem(dates, opens, highs, lows, closes))
-
-# p1.addItem(KagiItem(dates, opens, highs, lows, closes, reversalType = 'FixedPercent', reversalValue = 0.05, initialValue = 'HighLow', atr=False, atrPeriod=14))
-
-# p1.addItem(RenkoItem(dates, opens, highs, lows, closes, reversalType = 'FixedPrice', reversalValue = 20, initialValue = 'HighLow', atr=False, atrPeriod=14))
-
-#p1.addItem(PointAndFigureItem(dates, opens, highs, lows, closes, 'FixedPrice', 20, 'HighLow', False, 14))
-
-# p1.addItem(pg.PlotCurveItem([vama[i][1] for i in range(len(vama))], [vama[i][0][0] for i in range(len(vama))], pen=pg.mkPen(color= pg.mkColor((255, 17, 0, 128)), width=1)))
-# p1.addItem(pg.PlotCurveItem([vama[i][1] for i in range(len(vama))], [vama[i][0][1] for i in range(len(vama))]))
-
-# p1.addItem(pg.PlotCurveItem([vama[i][1] for i in range(len(vama))], [vama[i][0][2] for i in range(len(vama))]))
-
-# p1.addItem(pg.PlotDataItem([i/1000 for i in np.array(lineKlines, dtype = float) [:,0]], np.array(lineKlines, dtype = float) [:,4], pen=pg.mkPen(color= pg.mkColor((255, 255, 255, 255)), width=2)))
-
-# p1.addItem(HeikinAshiItem(dates, opens, highs, lows, closes))
-
-# p1.addItem(LinearBreakItem(dates, closes, 3))
-
-"""
 
 p1.addItem(
-    TPO(
+    charts.TPO(
         plot=p1,
-        pair=pair,
-        interval=interval,
-        period="1w",
-        fetch_time=fetch_time,
-        tickSize=10,
-        VAShow=True,
-        POCShow=True,
+        interval=client.get_historical_klines(pair, "1d", fetch_time),
+        period=client.get_historical_klines(pair, "1w", fetch_time),
+        tick_size=100,
+        VA_show=True,
+        POC_show=True,
         alphabet=False,
         deployed=False,
-        profile_right=True,
-        profile_left=True,
-        heatmapGradient=[
+        heatmap_gradient=[
             [0, "#ff0000"],
             [0.25, "#ffff00"],
             [0.5, "#00ff00"],
             [0.75, "#00ffff"],
             [1, "#0000ff"],
         ],
-        heatmapOn=True,
-        OpenCloseShow=True,
-        DynamicVA=False,
+        heatmap_on=True,
+        open_close_show=True,
+        dynamic_VA=False,
     )
 )
-"""
 
 
-
-vLine = pg.InfiniteLine(
-    angle=90,
-    movable=False,
-    pen=pg.mkPen(color=pg.mkColor((255, 255, 255, 100)), style=QtCore.Qt.DotLine),
-)
-hLine = pg.InfiniteLine(
-    angle=0,
-    movable=False,
-    pen=pg.mkPen(color=pg.mkColor((255, 255, 255, 100)), style=QtCore.Qt.DotLine),
-)
-p1.addItem(vLine, ignoreBounds=True)
-p1.addItem(hLine, ignoreBounds=True)
+p1.addItem(utility.v_line, ignoreBounds=True)
+p1.addItem(utility.h_line, ignoreBounds=True)
 
 vb = pI.getViewBox()
 
-priceText = pg.TextItem(
-    anchor=(1, 0.5), fill="#0d0d0d", color=pg.mkColor((255, 255, 255, 100))
-)
-timeText = pg.TextItem(
-    anchor=(0.5, 1), fill="#0d0d0d", color=pg.mkColor((255, 255, 255, 100))
-)
-
-p1.scene().addItem(priceText)
-p1.scene().addItem(timeText)
-
-
-def mouse_moved(evt):
-    pos = evt[0]
-    if pI.sceneBoundingRect().contains(pos):
-        mousePoint = vb.mapSceneToView(pos)
-
-        priceText.setText(str(charts.format_value(mousePoint.y(), step_size)))
-        priceText.setPos(win.width(), pos.y())
-
-        if mousePoint.x() >= mousePoint.x() - mousePoint.x() % (
-            interval_to_unix(interval) / 1000
-        ) + (interval_to_unix(interval) / 1000 / 2):
-            x = (
-                mousePoint.x()
-                - mousePoint.x() % (interval_to_unix(interval) / 1000)
-                + (interval_to_unix(interval) / 1000)
-            )
-
-        else:
-            x = mousePoint.x() - mousePoint.x() % (interval_to_unix(interval) / 1000)
-
-        timeText.setText(datetime.fromtimestamp(x).strftime("%Y-%m-%d %H:%M:%S"))
-        vLine.setPos(x)
-        timeText.setPos(
-            vb.mapViewToScene(QtCore.QPointF(x, mousePoint.y())).x(), win.height()
-        )
-        hLine.setPos(mousePoint.y())
-
+p1.scene().addItem(utility.price_text)
+p1.scene().addItem(utility.time_text)
 
 proxy = pg.SignalProxy(pI.scene().sigMouseMoved, rateLimit=60, slot=mouse_moved)

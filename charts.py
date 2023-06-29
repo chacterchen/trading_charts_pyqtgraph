@@ -1331,10 +1331,10 @@ class PointAndFigureItem(pg.GraphicsObject):
         for i in range(1, len(self.out)):
             if self.out[i][1] > self.out[i - 1][1]:
                 p.setPen(pg.mkPen("#0CF50D", width=1))
-                currentHigh = format_value(self.out[i][1], self.reversal_value)
-                currentLow = format_value(self.out[i - 1][1], self.reversal_value)
-                price = currentLow
-                while price < currentHigh:
+                current_high = format_value(self.out[i][1], self.reversal_value)
+                current_low = format_value(self.out[i - 1][1], self.reversal_value)
+                price = current_low
+                while price < current_high:
                     p.drawLine(
                         QtCore.QPointF(
                             self.out[1][0]
@@ -1367,10 +1367,10 @@ class PointAndFigureItem(pg.GraphicsObject):
                 j += 1
             if self.out[i][1] < self.out[i - 1][1]:
                 p.setPen(pg.mkPen("#F70606", width=1))
-                currentHigh = format_value(self.out[i - 1][1], self.reversal_value)
-                currentLow = format_value(self.out[i][1], self.reversal_value)
-                price = currentHigh
-                while price > currentLow:
+                current_high = format_value(self.out[i - 1][1], self.reversal_value)
+                current_low = format_value(self.out[i][1], self.reversal_value)
+                price = current_high
+                while price > current_low:
                     p.drawEllipse(
                         QtCore.QRectF(
                             self.out[1][0]
@@ -1480,24 +1480,22 @@ class LinearBreakItem(pg.GraphicsObject):
         return QtCore.QRectF(self.picture.boundingRect())
 
 
-def VAMA(dates, highs, lows, tickSize, period):
-
+def VAMA(dates, highs, lows, tick_size, period):
     VA = {}
-
     PVV = []
 
     for i in range(period - 1, len(dates)):
         for n in range(i, i - period, -1):
-            currentHigh = format_value(highs[n], tickSize)
-            currentLow = format_value(lows[n], tickSize)
-            price = currentHigh
+            current_high = format_value(highs[n], tick_size)
+            current_low = format_value(lows[n], tick_size)
+            price = current_high
 
-            while price >= currentLow:
+            while price >= current_low:
                 if str(price) in VA:
                     VA[str(price)] += 1
                 else:
                     VA[str(price)] = 1
-                price = float(Decimal(str(price)) - Decimal(str(tickSize)))
+                price = float(Decimal(str(price)) - Decimal(str(tick_size)))
 
         VA = [[float(k), VA[k]] for k in VA]
         PVV.append([POC_VAH_VAL(VA), dates[i]])

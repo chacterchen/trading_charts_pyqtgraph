@@ -1,9 +1,10 @@
-from datetime import datetime, timedelta
-import numpy as np
 import time
-import pyqtgraph as pg
+from datetime import datetime, timedelta
 from time import mktime
-from pyqtgraph import AxisItem
+
+import numpy as np
+import pyqtgraph as pg
+from pyqtgraph import AxisItem, QtCore
 
 MS_SPACING = 1 / 1000.0
 SECOND_SPACING = 1
@@ -321,3 +322,22 @@ class TimeAxisItem(pg.AxisItem):
 
     def detachFromPlotItem(self):
         raise NotImplementedError()  # TODO
+
+
+v_line = pg.InfiniteLine(
+    angle=90,
+    movable=False,
+    pen=pg.mkPen(color=pg.mkColor((255, 255, 255, 100)), style=QtCore.Qt.DotLine),
+)
+h_line = pg.InfiniteLine(
+    angle=0,
+    movable=False,
+    pen=pg.mkPen(color=pg.mkColor((255, 255, 255, 100)), style=QtCore.Qt.DotLine),
+)
+
+price_text = pg.TextItem(
+    anchor=(1, 0.5), fill="#0d0d0d", color=pg.mkColor((255, 255, 255, 100))
+)
+time_text = pg.TextItem(
+    anchor=(0.5, 1), fill="#0d0d0d", color=pg.mkColor((255, 255, 255, 100))
+)
